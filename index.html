@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bible Streaks</title>
+  <style>
+    :root {
+      --bg: #121214;
+      --card: #202024;
+      --primary: #9d8ec7; /* Lavender */
+      --primary-dark: #7866a3;
+      --fire: #ff9600;
+      --text: #ffffff;
+      --subtext: #afafaf;
+    }
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      display: flex;
+      justify-content: center;
+      padding: 16px;
+    }
+    .app {
+      width: 100%;
+      max-width: 400px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+    .hidden { display: none !important; }
+    
+    .card {
+      background: var(--card);
+      border-radius: 16px;
+      padding: 24px 20px;
+      border: 2px solid #2e2e35;
+      text-align: center;
+    }
+    .auth-title {
+      font-size: 1.5rem;
+      font-weight: bold;
+      margin-bottom: 8px;
+    }
+    .auth-sub {
+      color: var(--subtext);
+      font-size: 0.9rem;
+      margin-bottom: 20px;
+    }
+    .input-group {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+    input {
+      width: 100%;
+      padding: 12px;
+      border-radius: 10px;
+      border: 1px solid #3a3a42;
+      background: #18181b;
+      color: white;
+      font-size: 1rem;
+      box-sizing: border-box;
+    }
+    input:focus {
+      outline: 2px solid var(--primary);
+    }
+    
+    .top-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: var(--card);
+      padding: 12px 20px;
+      border-radius: 16px;
+      font-weight: bold;
+      border: 2px solid #2e2e35;
+    }
+    .streak-badge {
+      color: var(--fire);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 1.2rem;
+    }
+    .verse-title {
+      color: var(--subtext);
+      font-size: 0.85rem;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 8px;
+      text-align: left;
+    }
+    .verse-text {
+      font-size: 1rem;
+      line-height: 1.6;
+      font-weight: 400;
+      margin-bottom: 12px;
+      max-height: 280px;
+      overflow-y: auto;
+      text-align: left;
+      padding-right: 6px;
+    }
+    .verse-ref {
+      color: var(--primary);
+      font-weight: bold;
+      font-size: 1rem;
+      text-align: left;
+    }
+    .timer {
+      font-size: 2rem;
+      font-weight: bold;
+      margin: 10px 0;
+      color: var(--primary);
+    }
+    
+    button {
+      width: 100%;
+      padding: 14px;
+      border: none;
+      border-radius: 12px;
+      background: var(--primary);
+      box-shadow: 0 4px 0 var(--primary-dark);
+      color: white;
+      font-weight: bold;
+      font-size: 1rem;
+      cursor: pointer;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    button:active {
+      transform: translateY(2px);
+      box-shadow: 0 2px 0 var(--primary-dark);
+    }
+    .toggle-auth {
+      background: transparent;
+      box-shadow: none;
+      color: var(--subtext);
+      font-size: 0.85rem;
+      margin-top: 8px;
+      padding: 8px;
+    }
+    .logout-btn {
+      background: #334155;
+      box-shadow: 0 4px 0 #1e293b;
+      margin-top: 10px;
+    }
+    .well-done {
+      font-size: 1.8rem;
+      color: var(--primary);
+      font-weight: bold;
+      margin-bottom: 8px;
+    }
+  </style>
+</head>
+<body>
+
+<div class="app">
+
+  <!-- LOGIN SCREEN -->
+  <div id="authScreen" class="card">
+    <div class="auth-title" id="authTitle">Welcome Back</div>
+    <div class="auth-sub" id="authSub">Sign in to continue your streak</div>
+    
+    <div class="input-group">
+      <input type="text" id="usernameInput" placeholder="Username or Email">
+      <input type="password" id="passwordInput" placeholder="Password">
+    </div>
+    
+    <button onclick="handleAuth()" id="authBtn">Sign In</button>
+    <button class="toggle-auth" onclick="toggleAuthMode()" id="toggleBtn">Need an account? Sign Up</button>
+  </div>
+
+  <!-- BIBLE APP DASHBOARD -->
+  <div id="appDashboard" class="hidden">
+    <div class="top-bar">
+      <span id="userGreeting">Hi, Reader</span>
+      <div class="streak-badge">
+        🔥 <span id="streakCount">0</span> Days
+      </div>
+    </div>
+
+    <div style="height: 12px;"></div>
+
+    <!-- Reading Card -->
+    <div class="card">
+      <div class="verse-title">Today's Full Chapter</div>
+      <div class="verse-ref" id="verseRef">Loading...</div>
+      <div style="height: 8px;"></div>
+      <div class="verse-text" id="verseText">Fetching chapter text...</div>
+    </div>
+
+    <div style="height: 12px;"></div>
+
+    <!-- Timer / Completion Card -->
+    <div class="card" id="sessionCard">
+      <div class="verse-title" style="text-align: center;">Reading Session</div>
+      <div class="timer" id="timer">00:00</div>
+      <button id="actionBtn" onclick="toggleSession()">Start Session</button>
+      <button class="logout-btn" onclick="handleLogout()">Log Out</button>
+    </div>
+
+    <!-- Completion Screen -->
+    <div class="card hidden" id="doneCard">
+      <div class="well-done">🎉 Well Done!</div>
+      <p style="color: var(--subtext); margin-bottom: 20px;">You completed your daily reading goal!</p>
+      <button onclick="resetToDashboard()">Continue</button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  let isSignUp = false;
+  let seconds = 0;
+  let timerInterval = null;
+  let isSessionActive = false;
+
+  const currentUser = localStorage.getItem('logged_in_user');
+  if (currentUser) {
+    showDashboard(currentUser);
+  }
+
+  function toggleAuthMode() {
+    isSignUp = !isSignUp;
+    document.getElementById('authTitle').innerText = isSignUp ? "Create Account" : "Welcome Back";
+    document.getElementById('authSub').innerText = isSignUp ? "Start your Bible habit today" : "Sign in to continue your streak";
+    document.getElementById('authBtn').innerText = isSignUp ? "Sign Up" : "Sign In";
+    document.getElementById('toggleBtn').innerText = isSignUp ? "Already have an account? Sign In" : "Need an account? Sign Up";
+  }
+
+  function handleAuth() {
+    const user = document.getElementById('usernameInput').value.trim();
+    const pass = document.getElementById('passwordInput').value.trim();
+
+    if (!user || !pass) {
+      alert("Please enter both username and password.");
+      return;
+    }
+
+    localStorage.setItem('logged_in_user', user);
+    showDashboard(user);
+  }
+
+  function showDashboard(username) {
+    document.getElementById('authScreen').classList.add('hidden');
+    document.getElementById('appDashboard').classList.remove('hidden');
+    document.getElementById('userGreeting').innerText = `Hi, ${username}`;
+    
+    let streak = parseInt(localStorage.getItem(`${username}_streak`) || '0');
+    document.getElementById('streakCount').innerText = streak;
+    loadFullChapter();
+  }
+
+  function handleLogout() {
+    localStorage.removeItem('logged_in_user');
+    location.reload();
+  }
+
+  // Fetch full chapters
+  async function loadFullChapter() {
+    try {
+      const chapters = ['psalms+23', 'john+1', 'proverbs+3', 'philippians+4', 'romans+8'];
+      const randomRef = chapters[Math.floor(Math.random() * chapters.length)];
+      const res = await fetch(`https://bible-api.com/${randomRef}`);
+      const data = await res.json();
+      
+      document.getElementById('verseText').innerText = data.text.trim();
+      document.getElementById('verseRef').innerText = data.reference;
+    } catch (e) {
+      document.getElementById('verseRef').innerText = 'Psalm 23';
+      document.getElementById('verseText').innerText = "1 The Lord is my shepherd; I shall not want.\n2 He makes me lie down in green pastures. He leads me beside still waters.\n3 He restores my soul. He leads me in paths of righteousness for his name's sake.\n4 Even though I walk through the valley of the shadow of death, I will fear no evil, for you are with me; your rod and your staff, they comfort me.\n5 You prepare a table before me in the presence of my enemies; you anoint my head with oil; my cup overflows.\n6 Surely goodness and mercy shall follow me all the days of my life, and I shall dwell in the house of the Lord forever.";
+    }
+  }
+
+  // Handle Session Start/Stop
+  function toggleSession() {
+    const btn = document.getElementById('actionBtn');
+
+    if (!isSessionActive) {
+      // START SESSION
+      isSessionActive = true;
+      btn.innerText = "Stop Session";
+      btn.style.background = "#e54242"; // Red stop button
+      btn.style.boxShadow = "0 4px 0 #b22b2b";
+
+      timerInterval = setInterval(() => {
+        seconds++;
+        const mins = String(Math.floor(seconds / 60)).padStart(2, '0');
+        const secs = String(seconds % 60).padStart(2, '0');
+        document.getElementById('timer').innerText = `${mins}:${secs}`;
+      }, 1000);
+
+    } else {
+      // STOP SESSION
+      isSessionActive = false;
+      clearInterval(timerInterval);
+      timerInterval = null;
+
+      if (seconds >= 60) {
+        updateUserStreak();
+        // Show Well Done Screen
+        document.getElementById('sessionCard').classList.add('hidden');
+        document.getElementById('doneCard').classList.remove('hidden');
+      } else {
+        alert("Read for at least 1 minute to complete your streak!");
+        resetSessionBtn();
+      }
+    }
+  }
+
+  function resetSessionBtn() {
+    const btn = document.getElementById('actionBtn');
+    btn.innerText = "Start Session";
+    btn.style.background = "var(--primary)";
+    btn.style.boxShadow = "0 4px 0 var(--primary-dark)";
+    seconds = 0;
+    document.getElementById('timer').innerText = "00:00";
+  }
+
+  function resetToDashboard() {
+    document.getElementById('doneCard').classList.add('hidden');
+    document.getElementById('sessionCard').classList.remove('hidden');
+    resetSessionBtn();
+  }
+
+  function updateUserStreak() {
+    const username = localStorage.getItem('logged_in_user');
+    const today = new Date().toDateString();
+    const lastDateKey = `${username}_last_date`;
+    const streakKey = `${username}_streak`;
+    
+    if (localStorage.getItem(lastDateKey) !== today) {
+      let streak = parseInt(localStorage.getItem(streakKey) || '0') + 1;
+      localStorage.setItem(streakKey, streak);
+      localStorage.setItem(lastDateKey, today);
+      document.getElementById('streakCount').innerText = streak;
+    }
+  }
+</script>
+
+</body>
+</html>
